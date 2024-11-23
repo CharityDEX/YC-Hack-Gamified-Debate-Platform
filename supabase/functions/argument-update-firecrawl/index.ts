@@ -17,7 +17,7 @@ const corsHeaders = {
 async function getClaims(transcript: string, openai: OpenAI) {
     const systemMessage = {
         role: 'system',
-        content: `You are a helpful text analyzer on the level of a university ethics professor. Please consider the following transcript and identify the most important agrument claims made in the transcript. Please output your result as a list of claims separated by new lines. Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main claims (separated by new lines):`
+        content: `You are a helpful text analyzer on the level of a university ethics professor. Please consider the following transcript and identify the most important checkable agrument claims made in the transcript, so they can be fact checked using a web search. Please output your result as a list of claims separated by new lines. Please only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
     };
 
     const chatCompletion = await openai.chat.completions.create({
@@ -83,6 +83,23 @@ async function classifyClaim(claim: string, tavilyAnswer: string, openai: OpenAI
     return reply;
 }
 
+async function combineLists(list1: string[], list2: string[]): [string, string][] {
+    if (list1.length !== list2.length) {
+        throw new Error("Lists must be of the same size");
+    }
+    return list1.map((item, index) => [item, list2[index]]);
+}
+
+async function convertStringsToInts(strings: string[]): number[] {
+    return strings.map((str) => {
+        const parsed = parseInt(str, 10); // Use base 10 for parsing
+        if (isNaN(parsed)) {
+            throw new Error(`Invalid number: ${str}`);
+        }
+        return parsed;
+    });
+}
+
 Deno.serve(async (req) => {
 
     // Handle CORS preflight requests
@@ -140,11 +157,23 @@ Deno.serve(async (req) => {
 
     // write to table
     const fact_check = true;
-    const { data, error } = await supabaseClient.from('messages').insert([{ user_id, message_role, transcribed_message, fact_check }])
+    const message_content = transcribed_message;
+    const { data, error } = await supabaseClient.from('messages').insert([{ user_id, message_role, message_content, fact_check } ])
+
+    //const { data, error } = await supabaseClient.from('messages').insert([{ test_id, test_role, test_message, fact_check }])
     //const { data, error } = await supabaseClient.from('users').insert([{ user_id, first_name, last_name } ])
     //const { data, error } = await supabaseClient.from('users').insert([{ user_id, first_name, last_name } ])
 
-    const response_data = { "fact_check": fact_check }
+    // combine claims and factcheck for response
+    const classification_integers = await convertStringsToInts(classification_results);
+    const combined_data = await combineLists(classification_integers, detected_claims);
+
+    const response_data = { 
+        "claims": combined_data,
+        "keywords": [],
+        "score": 0,
+        "logics": []
+    }
 
     return new Response(JSON.stringify(response_data), {
         headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
