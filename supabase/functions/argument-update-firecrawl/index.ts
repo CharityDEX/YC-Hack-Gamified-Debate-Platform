@@ -171,7 +171,6 @@ Deno.serve(async (req) => {
     } else {
         console.error(`DETECTED CLAIMS ${detected_claims}`);
     }*/
-    
 
     const queries = await getSearchQueries(detected_claims, openai);
     console.error(`CREATED QUERIES ${queries}`);
@@ -206,10 +205,20 @@ Deno.serve(async (req) => {
     const classification_integers = await convertStringsToInts(classification_results);
     const combined_data = await combineLists(classification_integers, detected_claims);
 
+    let score = 0;
+
+    combined_data.forEach((element) => {
+        if (element[0] == 0) {
+            score -= 3;
+        } else if (element[0] == 1) {
+            score++;
+        }
+    });
+
     const response_data = { 
         "claims": combined_data,
         "keywords": [],
-        "score": 0,
+        "score": score,
         "logics": [],
         "noclaims": false
     }
