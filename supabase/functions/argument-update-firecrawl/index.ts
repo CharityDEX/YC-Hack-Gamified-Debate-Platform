@@ -17,7 +17,7 @@ const corsHeaders = {
 async function getClaims(transcript: string, openai: OpenAI) {
     const systemMessage = {
         role: 'system',
-        content: `You are a helpful text analyzer on the level of a university ethics professor. Please consider the following transcript and identify the most important checkable agrument claims made in the transcript, so they can be fact checked using a web search. Please output your result as a list of claims separated by new lines. Please only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
+        content: `You are a helpful text analyzer on the level of a university ethics professor. Please consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Please output your result as a list of claims separated by new lines. Please only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
     };
 
     const chatCompletion = await openai.chat.completions.create({
@@ -26,8 +26,16 @@ async function getClaims(transcript: string, openai: OpenAI) {
         stream: false
     });
 
-    const claims = chatCompletion.choices[0].message.content.split('\n');
-    return claims;
+    const result = chatCompletion.choices[0].message.content.split('\n');
+    return result;
+    /*
+    if (result == "0") {
+        // no claims found
+        const claims = ["0"];
+    } else {
+        const claims = result.split('\n');
+    }
+    return claims;*/
 }
 
 async function getSearchQueries(claims: string[], openai: OpenAI) {
@@ -137,6 +145,27 @@ Deno.serve(async (req) => {
    
     const detected_claims = await getClaims(transcribed_message, openai);
     console.error(`DETECTED CLAIMS ${detected_claims}`);
+    /*
+    if (detected_claims[0] == "0") {
+        // no claims
+        console.error(`NO CLAIMS!`);
+
+        const response_data = { 
+            "claims": [],
+            "keywords": [],
+            "score": 0,
+            "logics": [],
+            "noclaims": true
+        }
+    
+        return new Response(JSON.stringify(response_data), {
+            headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+            status: 200
+        })
+    } else {
+        console.error(`DETECTED CLAIMS ${detected_claims}`);
+    }*/
+    
 
     const queries = await getSearchQueries(detected_claims, openai);
     console.error(`CREATED QUERIES ${queries}`);
@@ -159,6 +188,9 @@ Deno.serve(async (req) => {
     const fact_check = true;
     const message_content = transcribed_message;
     const { data, error } = await supabaseClient.from('messages').insert([{ user_id, message_role, message_content, fact_check } ])
+    if (error) {
+        console.error(`ERROR! ${JSON.stringify(error)}`);
+    }
 
     //const { data, error } = await supabaseClient.from('messages').insert([{ test_id, test_role, test_message, fact_check }])
     //const { data, error } = await supabaseClient.from('users').insert([{ user_id, first_name, last_name } ])
@@ -172,7 +204,8 @@ Deno.serve(async (req) => {
         "claims": combined_data,
         "keywords": [],
         "score": 0,
-        "logics": []
+        "logics": [],
+        "noclaims": false
     }
 
     return new Response(JSON.stringify(response_data), {
