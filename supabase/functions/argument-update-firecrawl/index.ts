@@ -22,12 +22,12 @@ async function getClaims(transcript: string, openai: OpenAI) {
 
     const userMessage = {
         role: 'user',
-        content: `Consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Identify 0-5 claims. Output your result as a list of claims separated by new lines. Only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims that can't be verified with search! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
+        content: `Consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Identify 1 to 5 claims verifiable by search. Output your result as a list of claims separated by new lines. Only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims that can't be verified with search! For example: select the claim that "joe biden was never president", but don't output an emotional/personal claim like "I don't care about the middle east war" or an un-verifiable claim like "you never washed the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
     };
 
     const chatCompletion = await openai.chat.completions.create({
-        messages: [systemMessage],
-        model: 'gpt-4o-mini',
+        messages: [systemMessage,userMessage],
+        model: 'gpt-4o',
         stream: false
     });
 
@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
     });
 
     const transcribed_message = transcriptionResponse.text;
+    console.error(`TRANSCRIPT! ${transcribed_message}`);
 
     //const claim = "thomas edison did not invent the lightbulb. Also, donald trump is not even president!";
     
