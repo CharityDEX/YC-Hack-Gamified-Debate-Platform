@@ -17,7 +17,12 @@ const corsHeaders = {
 async function getClaims(transcript: string, openai: OpenAI) {
     const systemMessage = {
         role: 'system',
-        content: `You are a helpful text analyzer on the level of a university ethics professor. Please consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Please output your result as a list of claims separated by new lines. Please only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
+        content: `You are a helpful fact checker, debate moderator, and specificially a claim identifier. Consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Output your result as a list of claims separated by new lines. Only select actual fact-based claims, which could be fact checked with web search, Don't select personal or emotional claims. For example: select the claim that "joe biden was never president", but don't output an emotional/personal claim like "I love you" or an un-verifiable claim like "you never washed the dishes". Do NOT start the claims with letters, just output text!`
+    };
+
+    const userMessage = {
+        role: 'user',
+        content: `Consider the following transcript and identify the most important checkable argument claims made in the transcript, so they can be fact checked using a web search. Identify 0-5 claims. Output your result as a list of claims separated by new lines. Only select actual fact-based claims, which could be fact checked with web search, don't select personal or emotional claims that can't be verified with search! For example: select the claim that "joe biden was never president", but don't select the claim that "you never wash the dishes". Do NOT start the claims with letters, just output text! Here is the transcript: ${transcript} Main logical claims that can be fact-checked (separated by new lines):`
     };
 
     const chatCompletion = await openai.chat.completions.create({
