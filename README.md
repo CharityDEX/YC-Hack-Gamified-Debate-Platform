@@ -1,4 +1,5 @@
-Real-time argument mediation tool that enhances debates by fact-checking and scoring arguments for credibility.
+Real-time argument mediation tool that enhances debates by fact-checking and scoring arguments for credibility - https://youtu.be/s2TKOw78-fU?si=LwJcTt_SEqlMqgZ0
+<img width="1728" alt="Castle Debate Mediator Demo" src="https://github.com/user-attachments/assets/476346b8-5f75-44c4-945d-24d3167cf8c1">
 
 Core Features of the Product
 
